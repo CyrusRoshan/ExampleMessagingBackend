@@ -7,12 +7,27 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func setMessage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Set message\n"))
+// Message has sender, recipient, content, and epoch time
+type Message struct {
+	to      string
+	from    string
+	message string
+	time    int
 }
 
-func getMessage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Get message\n"))
+// Messages holds the messages themselves
+type Messages []Message
+
+// Convo holds pointers to the messages
+type Convo struct {
+	participant string
+	history     []*Message
+}
+
+// User is a struct for holding each user's conversations. The conversations themselves have pointers to the messages held in a Messages struct
+type User struct {
+	userName string
+	convos   map[string]Convo
 }
 
 func main() {
@@ -30,4 +45,12 @@ func main() {
 
 	// Listen to port, so we access this at http://localhost:3001
 	http.ListenAndServe(":3001", r)
+}
+
+func setMessage(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Set message\n"))
+}
+
+func getMessage(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Get message\n"))
 }
