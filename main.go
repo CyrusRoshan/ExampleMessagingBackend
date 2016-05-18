@@ -15,7 +15,7 @@ type Message struct {
 	From    string `json:"from"`
 	To      string `json:"to"`
 	Message string `json:"message"`
-	At      int64  `json:"at"`
+	At      int64  `json:"at,omitempty"`
 }
 
 // User is a struct for holding each user's conversations. The conversations themselves have pointers to the messages held in a Messages struct
