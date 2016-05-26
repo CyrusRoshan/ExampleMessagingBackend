@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -37,6 +38,7 @@ func TestStartup(t *testing.T) {
 
 func TestSending(t *testing.T) {
 	for _, testCase := range cases {
+		time.Sleep(1000 * time.Millisecond)              // sleep 1 second so we get different timestamps
 		caseTimes = append(caseTimes, time.Now().Unix()) //timestamp before test case
 
 		// convert test case to proper message format
@@ -81,7 +83,7 @@ func TestSending(t *testing.T) {
 	}
 }
 
-func TestReading(t *testing.T) {
+/*func TestReading(t *testing.T) {
 	for _, testCase := range cases {
 		// curl the /UserNameA/UserNameA/FromTimeStamp, where FromTimeStamp = 0 so we can get all messages between users
 		resp, err := http.Get("http://localhost:3001/" + url.QueryEscape(testCase.userNameA) + "/" + url.QueryEscape(testCase.userNameB) + "/0")
@@ -118,8 +120,45 @@ func TestReading(t *testing.T) {
 			}
 		}
 	}
-}
+}*/
 
 func TestTimedReading(t *testing.T) {
+	for i, testCase := range cases {
+		// curl the /UserNameA/UserNameA/FromTimeStamp, where FromTimeStamp = 0 so we can get all messages between users
+		t.Log(i)
+		t.Log("http://localhost:3001/" + url.QueryEscape(testCase.userNameA) + "/" + url.QueryEscape(testCase.userNameB) + "/" + strconv.FormatInt(caseTimes[i], 10))
+		resp, err := http.Get("http://localhost:3001/" + url.QueryEscape(testCase.userNameA) + "/" + url.QueryEscape(testCase.userNameB) + "/" + strconv.FormatInt(caseTimes[i], 10))
+		if err != nil {
+			t.Errorf(err.Error())
+		}
 
+		// Unmarshal JSON to array of messages
+		var response []Message
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+		t.Log(response)
+
+		// compare the results to those stored in the server's memory
+		// linear search because there are like 10 test cases
+		participants := []string{testCase.userNameA, testCase.userNameB}
+		for i, thisUser := range participants {
+			otherUser := participants[1-i] // turns 1 to 0 and vice versa. Kind of hacky, though
+
+			for _, message := range Users[thisUser].Convo[otherUser] {
+				messageFound := false
+				for _, recievedMessage := range response {
+					if recievedMessage == *message {
+						messageFound = true
+						break
+					}
+				}
+				if !messageFound {
+					t.Error("A message between " + (*message).From + " and " + (*message).To + " was not found.")
+				}
+				// could break here if thisUser == otherUser, but it doesn't matter for test case pass/fail, only very minor performance
+			}
+		}
+	}
 }
